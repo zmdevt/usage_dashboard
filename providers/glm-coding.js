@@ -16,6 +16,7 @@ const UNITS = { TOKENS_LIMIT: 'tokens', CREDIT_LIMIT: 'credits', TIME_LIMIT: 'ca
 
 export default {
   id: 'glm-coding',
+  unofficial: true,
   name: 'GLM Coding Plan',
   setup: 'Set ZAI_API_KEY (your Coding Plan key) in .env. Set ZAI_REGION=cn for bigmodel.cn.',
   configured: (env) => Boolean(env.ZAI_API_KEY),
@@ -64,7 +65,7 @@ export function parseLimits(data = {}) {
       unit: counts ? UNITS[l.type] : '%',
       period: def.period,
       resetsAt: Number.isFinite(l.nextResetTime) ? new Date(l.nextResetTime).toISOString() : null,
-      note: [plan, 'Unofficial endpoint'].filter(Boolean).join(' · '),
+      note: plan,
     });
   }
   if (meters.length === 0) throw new Error('no recognised limits in Z.ai response');

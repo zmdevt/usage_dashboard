@@ -7,34 +7,26 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header class="top">
-    <div>
-      <h1>Usage Limits</h1>
-      <p class="muted" id="fetched">Loading…</p>
-    </div>
-    <button id="refresh" type="button">Refresh</button>
-  </header>
-
   <main>
-    <section class="summary" id="summary" aria-live="polite"></section>
+    <header class="top">
+      <div>
+        <h1>Usage limits</h1>
+        <p class="muted" id="fetched">Loading…</p>
+      </div>
+      <button id="refresh" type="button">Refresh</button>
+    </header>
 
-    <section>
-      <h2>Needs attention</h2>
-      <div class="grid" id="attention"></div>
-    </section>
+    <p class="summary" id="summary" aria-live="polite"></p>
 
-    <section>
-      <h2>All meters</h2>
-      <div id="groups"></div>
-    </section>
+    <div id="list"></div>
 
-    <section>
-      <h2>Not connected</h2>
+    <details class="panel" id="setup-panel">
+      <summary>Setup: <span id="unconfigured-count">0</span> not connected</summary>
       <ul class="plain" id="unconfigured"></ul>
-    </section>
+    </details>
 
-    <section>
-      <h2 id="form-title">Add manual meter</h2>
+    <details class="panel" id="manual-panel">
+      <summary id="form-title">Add manual meter</summary>
       <p class="muted">For plans with no usage API. Copy the numbers from the provider's usage page.</p>
       <div class="presets" id="presets"></div>
       <form id="manual-form" class="form">
@@ -57,24 +49,24 @@
         <label class="wide">Note <input name="note" maxlength="200"></label>
         <div class="actions wide">
           <button type="submit">Save</button>
-          <button type="reset" class="secondary" id="cancel">Clear</button>
+          <button type="reset" class="secondary">Clear</button>
           <span class="error" id="form-error" role="alert"></span>
         </div>
       </form>
-    </section>
+    </details>
   </main>
 
-  <template id="meter-tpl">
-    <article class="meter">
-      <div class="meter-head">
-        <span class="label"></span>
-        <span class="badge"></span>
+  <template id="row-tpl">
+    <div class="row">
+      <div class="desc">
+        <div class="label"></div>
+        <div class="sub muted"></div>
       </div>
-      <div class="figures"></div>
-      <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><span></span></div>
-      <div class="meta muted"></div>
-      <div class="row-actions"></div>
-    </article>
+      <div class="usage">
+        <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><span></span></div>
+        <div class="value"></div>
+      </div>
+    </div>
   </template>
 
   <script type="module" src="app.js"></script>

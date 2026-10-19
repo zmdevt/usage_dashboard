@@ -1,7 +1,6 @@
-// Starting points for plans with no usage API. Limits are left blank on
-// purpose: providers change them often, so copy them from the usage page.
-// Claude Pro/Max is automatic via the Claude Code status line; these presets
-// cover it only for people who don't use Claude Code.
+// Starting points for plans with no usage API, or for people who don't use
+// the vendor's CLI. Limits for count-based plans are left blank: providers
+// change them often, so copy them from the usage page.
 const PRESETS = [
   { provider: 'ChatGPT', label: '5-hour window', unit: '%', limit: 100, period: '5h' },
   { provider: 'ChatGPT', label: 'Weekly limit', unit: '%', limit: 100, period: 'weekly' },
@@ -31,97 +30,120 @@ async function load(force = false) {
 }
 
 function render(data) {
-  $('fetched').textContent = `API data fetched ${relTime(data.fetchedAt)} · cached 5 min`;
-  const apiMeters = data.providers.flatMap((p) => p.meters);
-  const all = [...apiMeters, ...data.manual];
+  $('fetched').textContent = `Updated ${relTime(data.fetchedAt)} · refreshes every 5 min`;
   manualById = new Map(data.manual.map((m) => [m.id, m]));
 
-  // Summary
-  const count = (s) => all.filter((m) => m.status === s).length;
-  const errors = data.providers.filter((p) => p.state === 'error').length;
-  setChildren($('summary'), [
-    stat('Meters', all.length),
-    stat('Critical ≥90%', count('critical')),
-    stat('Warning ≥75%', count('warning')),
-    stat('Stale (reset passed)', count('stale')),
-    stat('Provider errors', errors),
-  ]);
-
-  // Needs attention: critical, warning, stale; highest ratio first.
-  const rank = { critical: 0, warning: 1, stale: 2 };
-  const hot = all.filter((m) => m.status in rank).sort((a, b) => rank[a.status] - rank[b.status] || (b.ratio ?? 0) - (a.ratio ?? 0));
-  setChildren($('attention'), hot.length ? hot.map(meterCard) : [empty('Nothing near a limit.')]);
-
-  // Grouped by provider.
+  // Only connected providers (ok or error) and manual meters are listed.
   const groups = new Map();
-  for (const m of all) {
-    if (!groups.has(m.provider)) groups.set(m.provider, []);
-    groups.get(m.provider).push(m);
+  for (const p of data.providers.filter((p) => p.state !== 'not_configured')) {
+    groups.set(p.name, { name: p.name, unofficial: p.unofficial, error: p.error, meters: [...p.meters], manual: false });
   }
-  const groupEls = [];
-  for (const p of data.providers.filter((p) => p.state === 'error')) {
-    const h = el('h3', p.name);
-    const e = el('p', `Error: ${p.error}`);
-    e.className = 'error-text';
-    groupEls.push(h, e);
+  for (const m of data.manual) {
+    if (!groups.has(m.provider)) groups.set(m.provider, { name: m.provider, meters: [], manual: true });
+    groups.get(m.provider).meters.push(m);
   }
-  for (const [name, meters] of [...groups].sort((a, b) => a[0].localeCompare(b[0]))) {
-    const grid = el('div');
-    grid.className = 'grid';
-    setChildren(grid, meters.map(meterCard));
-    groupEls.push(el('h3', name), grid);
-  }
-  setChildren($('groups'), groupEls.length ? groupEls : [empty('No meters yet. Add API keys to .env or a manual meter below.')]);
 
-  // Not configured providers.
+  const all = [...groups.values()].flatMap((g) => g.meters);
+  const count = (s) => all.filter((m) => m.status === s).length;
+  const summary = $('summary');
+  summary.replaceChildren();
+  if (all.length) {
+    summary.append(el('b', String(all.length)), ` limits across `, el('b', String(groups.size)), ` providers`);
+    for (const [n, word] of [[count('critical'), 'almost or fully used'], [count('warning'), 'near the limit'], [count('stale'), 'out of date']]) {
+      if (n) summary.append(' · ', el('b', String(n)), ` ${word}`);
+    }
+  }
+
+  $('list').replaceChildren(...(groups.size ? [...groups.values()].map(section) : [empty('Nothing connected yet. Open Setup below to connect a provider, or add a manual meter.')]));
+
   const unconf = data.providers.filter((p) => p.state === 'not_configured');
-  setChildren($('unconfigured'), unconf.length ? unconf.map((p) => {
+  $('setup-panel').hidden = unconf.length === 0;
+  $('unconfigured-count').textContent = String(unconf.length);
+  $('unconfigured').replaceChildren(...unconf.map((p) => {
     const li = el('li');
     li.append(el('b', p.name), ` — ${p.setup}`);
     return li;
-  }) : [empty('All API providers connected.')]);
+  }));
 }
 
-function meterCard(m) {
-  const node = $('meter-tpl').content.firstElementChild.cloneNode(true);
+function section(g) {
+  const s = el('section');
+  s.className = 'provider';
+  const head = el('div');
+  head.className = 'provider-head';
+  head.append(el('h2', g.name));
+  if (g.unofficial) head.append(tag('unofficial'));
+  if (g.manual) head.append(tag('manual'));
+  s.append(head);
+  if (g.error) {
+    const e = el('div', g.error);
+    e.className = 'provider-error';
+    s.append(e);
+  }
+  s.append(...g.meters.map(row));
+  return s;
+}
+
+function row(m) {
+  const node = $('row-tpl').content.firstElementChild.cloneNode(true);
   node.dataset.status = m.status;
   node.querySelector('.label').textContent = m.label;
-  node.querySelector('.badge').textContent = m.source === 'manual' ? `${m.provider} · manual` : m.provider;
 
-  const fig = node.querySelector('.figures');
-  if (m.used == null) fig.textContent = 'No value';
-  else if (m.unit === '%' && m.limit === 100) fig.textContent = `${fmt(m.used)}% used`;
-  else if (m.limit) fig.textContent = `${fmt(m.used)} / ${fmt(m.limit)} ${m.unit} · ${Math.round(m.ratio * 100)}%`;
-  else fig.textContent = `${fmt(m.used)} ${m.unit} · no limit set`;
-
+  const pct = m.ratio != null ? Math.round(m.ratio * 100) : null;
   const bar = node.querySelector('.bar');
-  if (m.ratio != null) {
-    const pct = Math.min(100, Math.round(m.ratio * 100));
-    bar.querySelector('span').style.width = `${pct}%`;
-    bar.setAttribute('aria-valuenow', String(pct));
-    bar.setAttribute('aria-label', `${m.label} ${pct}% used`);
+  const value = node.querySelector('.value');
+  if (pct != null) {
+    bar.querySelector('span').style.width = `${Math.min(100, pct)}%`;
+    bar.setAttribute('aria-valuenow', String(Math.min(100, pct)));
+    bar.setAttribute('aria-label', `${m.label}: ${pct}% used`);
+    value.textContent = `${pct}% used`;
   } else {
-    bar.remove();
+    bar.style.visibility = 'hidden';
+    value.textContent = m.used == null ? 'No data' : `${fmt(m.used)} ${m.unit}`.trim();
   }
 
-  const meta = [];
-  if (m.status === 'stale') meta.push('Reset time passed; update this value');
-  else if (m.resetsAt) meta.push(`Resets ${relTime(m.resetsAt)}`);
-  if (m.source === 'manual') meta.push(`updated ${relTime(m.updatedAt)}`);
-  if (m.note) meta.push(m.note);
-  node.querySelector('.meta').textContent = meta.join(' · ');
+  const sub = node.querySelector('.sub');
+  const word = statusWord(m);
+  if (word) {
+    const w = el('span', word);
+    w.className = 'status-word';
+    sub.append(w);
+  }
+  const parts = [];
+  if (pct != null && m.unit !== '%') parts.push(`${fmt(m.used)} of ${fmt(m.limit)} ${m.unit}`);
+  if (pct == null && m.used != null) parts.push('No limit set');
+  if (m.status !== 'stale' && m.resetsAt) parts.push(resetText(m.resetsAt));
+  if (m.source === 'manual') parts.push(`entered ${relTime(m.updatedAt)}`);
+  if (m.note) parts.push(m.note);
+  if (parts.length) sub.append(`${word ? ' · ' : ''}${parts.join(' · ')}`);
 
   if (m.source === 'manual') {
-    const actions = node.querySelector('.row-actions');
-    const edit = el('button', 'Edit');
-    edit.type = 'button';
-    edit.onclick = () => fillForm(manualById.get(m.id), true);
-    const del = el('button', 'Delete');
-    del.type = 'button';
-    del.onclick = () => removeManual(m.id, m.label);
+    const actions = el('span');
+    actions.className = 'row-actions';
+    const edit = linkButton('Edit', () => fillForm(manualById.get(m.id), true));
+    const del = linkButton('Delete', () => removeManual(m.id, m.label));
     actions.append(edit, del);
+    sub.append(actions);
   }
   return node;
+}
+
+function statusWord(m) {
+  if (m.status === 'stale') return 'Reset time passed; update this value';
+  if (m.status === 'critical') return m.ratio >= 1 ? 'Limit reached' : 'Almost used up';
+  if (m.status === 'warning') return 'Near limit';
+  return '';
+}
+
+function resetText(iso) {
+  const diff = Date.parse(iso) - Date.now();
+  const min = Math.round(diff / 60_000);
+  if (min < 60) return `Resets in ${Math.max(1, min)} min`;
+  if (min < 24 * 60) return `Resets in ${Math.floor(min / 60)} hr${min % 60 ? ` ${min % 60} min` : ''}`;
+  const opts = diff < 7 * 86_400_000
+    ? { weekday: 'short', hour: 'numeric', minute: '2-digit' }
+    : { month: 'short', day: 'numeric' };
+  return `Resets ${new Date(iso).toLocaleString(undefined, opts)}`;
 }
 
 function fillForm(m, editing = false) {
@@ -132,6 +154,7 @@ function fillForm(m, editing = false) {
     input.value = k === 'resetsAt' ? toLocalInput(v) : v;
   }
   $('form-title').textContent = editing ? `Edit: ${m.provider} · ${m.label}` : 'Add manual meter';
+  $('manual-panel').open = true;
   form.scrollIntoView({ behavior: 'smooth' });
   form.elements.namedItem('used').focus();
 }
@@ -169,12 +192,17 @@ function el(tag, text) {
   if (text != null) n.textContent = text;
   return n;
 }
-function setChildren(parent, kids) { parent.replaceChildren(...kids); }
-function stat(label, value) {
-  const d = el('div', label);
-  d.className = 'stat';
-  d.prepend(el('b', String(value)));
-  return d;
+function tag(text) {
+  const t = el('span', text);
+  t.className = 'tag';
+  return t;
+}
+function linkButton(text, onclick) {
+  const b = el('button', text);
+  b.type = 'button';
+  b.className = 'link';
+  b.onclick = onclick;
+  return b;
 }
 function empty(text) {
   const p = el('p', text);

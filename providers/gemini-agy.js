@@ -12,6 +12,7 @@ const PERIODS = { '5h': '5h', weekly: 'weekly', daily: 'daily' };
 
 export default {
   id: 'gemini-agy',
+  unofficial: true,
   name: 'Gemini',
   setup: 'Install and sign in to the Antigravity CLI (agy), then set GEMINI_AGY=on in .env. Optional: AGY_BIN for a custom path.',
   configured: (env) => isOn(env.GEMINI_AGY),
@@ -57,7 +58,7 @@ export function parseAgy(stdout) {
         unit: '%',
         period: PERIODS[window] || 'none',
         resetsAt: b.reset_time || null,
-        note: 'Via Antigravity CLI · output format unverified',
+        note: 'Via Antigravity CLI',
       });
     }
   }

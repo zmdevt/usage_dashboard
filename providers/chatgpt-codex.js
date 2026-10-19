@@ -14,6 +14,7 @@ const USAGE_URL = 'https://chatgpt.com/backend-api/wham/usage';
 
 export default {
   id: 'chatgpt-codex',
+  unofficial: true,
   name: 'ChatGPT',
   setup: 'Sign in to the Codex CLI with your ChatGPT account, then set CHATGPT_USAGE=on in .env. Unofficial endpoint.',
   configured: (env) => isOn(env.CHATGPT_USAGE),
@@ -60,7 +61,7 @@ export async function readCodexLogin(env) {
 }
 
 export function parseUsage(body = {}) {
-  const note = [body.plan_type && `Plan: ${body.plan_type}`, creditsNote(body.credits), 'Unofficial endpoint']
+  const note = [body.plan_type && `Plan: ${body.plan_type}`, creditsNote(body.credits)]
     .filter(Boolean).join(' · ');
   const meters = windows(body.rate_limit, 'chatgpt', '', note);
   for (const extra of body.additional_rate_limits || []) {
