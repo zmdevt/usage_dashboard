@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { setEnvLine, planStatusLine, checkCodexLogin } from '../scripts/connect.mjs';
+import { USAGE_STREAM } from './fixtures.js';
 
 const SCRIPT = fileURLToPath(new URL('../scripts/connect.mjs', import.meta.url));
 
@@ -49,7 +50,7 @@ test('connect wires up all three CLIs end to end without printing tokens', async
       await writeFile(join(bin, name), `#!/usr/bin/env node\n${body}\n`);
       await chmod(join(bin, name), 0o755);
     };
-    await fake('claude', '');
+    await fake('claude', `process.stdout.write(${JSON.stringify(USAGE_STREAM)});`);
     await fake('codex', '');
     const agy = { status: 'SUCCESS', command: { data: { groups: [{ name: 'Gemini Models', buckets: [{ window: '5h', remaining_fraction: 0.75 }] }] } } };
     await fake('agy', `process.stdout.write(${JSON.stringify(JSON.stringify(agy))});`);
@@ -75,9 +76,9 @@ test('connect wires up all three CLIs end to end without printing tokens', async
     assert.equal(settings.theme, 'dark');
     assert.ok(settings.statusLine.command.startsWith(`"${process.execPath}" "`));
     assert.match(settings.statusLine.command, /claude-statusline\.mjs"$/);
-    assert.match(r.stdout, /Claude\s+connected\s+hook works/);
+    assert.match(r.stdout, /Claude\s+connected\s+live: Current session \(5-hour\) 12%, Weekly limit 58%, Weekly limit \(Fable\) 5%; status-line hook works/);
     assert.ok((await readdir(join(home, '.claude'))).some((f) => f.startsWith('settings.json.bak-')));
-    assert.equal(await readFile(envPath, 'utf8'), 'PORT=4317\nCHATGPT_USAGE=on\nGEMINI_AGY=on\n');
+    assert.equal(await readFile(envPath, 'utf8'), 'PORT=4317\nCHATGPT_USAGE=on\nCLAUDE_USAGE_CLI=on\nGEMINI_AGY=on\n');
   } finally {
     await rm(home, { recursive: true });
   }
@@ -96,7 +97,7 @@ test('connect leaves Claude settings alone when not confirmed', async () => {
       env: { PATH: `${bin}:/usr/bin:/bin`, HOME: home, USAGE_DASHBOARD_ENV: join(home, 'x.env'), AGY_BIN: join(home, 'none') },
     });
     assert.equal(r.status, 0, r.stderr);
-    assert.match(r.stdout, /Claude\s+skipped\s+you declined/);
+    assert.match(r.stdout, /Claude\s+action needed\s+status-line hook skipped: you declined/);
     assert.match(r.stdout, /ChatGPT\s+skipped/);
     assert.match(r.stdout, /Gemini\s+skipped/);
     await assert.rejects(readFile(join(home, '.claude', 'settings.json')));

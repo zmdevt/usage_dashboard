@@ -17,6 +17,7 @@ Build v0.1: a local web app that consolidates usage limits across AI subscriptio
 
 ## Status (2026-10-19)
 - ~~v0.1 built: 5 API providers, manual meters, and the UI. All 17 tests pass.~~ Superseded.
+- Claude live route (2026-10-19): runs `claude -p "/usage" --output-format stream-json` and reads `usage_report.rate_limits.limits[]` (Agent SDK >= 0.3.273, experimental). No token handling; reflects desktop-app use. Status line stays as fallback. Unverified on a real machine until the user runs `npm run connect`.
 - Claude hook fix: the status line now calls node by its full path (non-interactive shells may lack nvm/conda PATH) and records lastRunAt so "never ran" and "ran without limits" are distinguishable.
 - v0.3: vertical layout (connected providers only), `npm run connect` for CLI logins. 34 tests pass.
 - v0.2: 8 providers (adds GLM, ChatGPT via Codex, Gemini via agy). All 29 tests pass. Not yet run against real credentials.

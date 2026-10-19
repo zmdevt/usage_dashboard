@@ -14,6 +14,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline/promises';
 import { parseAgy } from '../providers/gemini-agy.js';
+import { runClaude, parseUsageReport } from '../providers/claude-plan.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const STATUSLINE_SCRIPT = join(ROOT, 'scripts', 'claude-statusline.mjs');
@@ -71,8 +72,8 @@ function writeAtomic(path, text) {
   renameSync(tmp, path);
 }
 
-async function connectClaude(ask) {
-  if (!has('claude')) return ['Claude', 'skipped', 'Claude Code is not installed'];
+// Adds the status-line hook (the fallback source) and test-runs it.
+async function setupClaudeHook(ask) {
   const dir = process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude');
   const path = join(dir, 'settings.json');
   let settings = {};
@@ -80,7 +81,7 @@ async function connectClaude(ask) {
     try {
       settings = JSON.parse(readFileSync(path, 'utf8'));
     } catch {
-      return ['Claude', 'action needed', `${path} is not valid JSON; left untouched`];
+      return { ran: false, hook: `status-line hook skipped: ${path} is not valid JSON` };
     }
   }
   const command = statusLineCommand();
@@ -91,7 +92,7 @@ async function connectClaude(ask) {
     } else {
       console.log(`\nClaude Code: add the usage status line to ${path}`);
       if (plan.previous) console.log(`  This replaces your current status line: ${plan.previous}`);
-      if (!(await ask('  Proceed? [y/N] '))) return ['Claude', 'skipped', 'you declined the settings change'];
+      if (!(await ask('  Proceed? [y/N] '))) return { ran: false, hook: 'status-line hook skipped: you declined the settings change' };
     }
     if (existsSync(path)) {
       const backup = `${path}.bak-${Date.now()}`;
@@ -107,8 +108,55 @@ async function connectClaude(ask) {
   const r = spawnSync(command, { shell: true, input: '{}', encoding: 'utf8', timeout: 10_000, env: { ...process.env, CLAUDE_STATUSLINE_FILE: probe } });
   const ran = existsSync(probe);
   if (ran) rmSync(probe);
-  if (!ran) return ['Claude', 'action needed', `the status-line hook failed to run: ${(r.stderr || r.error?.message || 'no output').trim().slice(0, 200)}`];
-  return ['Claude', 'connected', 'hook works. Start a new Claude Code session and send one message (Pro/Max login needed)'];
+  return { ran, hook: ran ? 'status-line hook works' : `status-line hook failed: ${(r.stderr || r.error?.message || 'no output').trim().slice(0, 160)}` };
+}
+
+async function connectClaude(ask, setEnv) {
+  if (!has(process.env.CLAUDE_BIN || 'claude')) return ['Claude', 'skipped', 'Claude Code is not installed'];
+  const { ran, hook } = await setupClaudeHook(ask);
+
+  // Live route: Claude Code's own /usage, which also reflects desktop-app use.
+  console.log('\nChecking live Claude usage via `claude -p /usage`…');
+  let out = '';
+  try {
+    out = await runClaude(process.env.CLAUDE_BIN || 'claude');
+    const meters = parseUsageReport(out);
+    setEnv('CLAUDE_USAGE_CLI', 'on');
+    return ['Claude', 'connected', `live: ${meters.map((m) => `${m.label} ${m.used}%`).join(', ')}; ${hook}`];
+  } catch (e) {
+    printUsageDiagnostics(out);
+    return ['Claude', ran ? 'connected' : 'action needed', `${hook}; live check failed (${e.message}), so numbers update only on Claude Code replies`];
+  }
+}
+
+// Prints message types and any usage-related block from Claude Code's output,
+// so a failed parse can be fixed. Skips everything else (ids, paths, text).
+function printUsageDiagnostics(stdout) {
+  const types = new Set();
+  const blocks = [];
+  for (const line of String(stdout).split('\n')) {
+    try {
+      const o = JSON.parse(line);
+      types.add([o.type, o.subtype].filter(Boolean).join('/'));
+      for (const k of ['usage_report', 'rate_limits', 'rate_limit_info']) {
+        const hit = JSON.stringify(o).includes(`"${k}"`) && findBlock(o, k);
+        if (hit) blocks.push({ [k]: hit });
+      }
+    } catch {}
+  }
+  if (!stdout) return;
+  console.log(`  Message types seen: ${[...types].join(', ') || 'none'}`);
+  if (blocks.length) console.log(`  Usage data seen:\n${JSON.stringify(blocks, null, 2).slice(0, 1500)}`);
+}
+
+function findBlock(o, key, depth = 0) {
+  if (!o || typeof o !== 'object' || depth > 6) return null;
+  if (key in o) return o[key];
+  for (const v of Object.values(o)) {
+    const hit = findBlock(v, key, depth + 1);
+    if (hit) return hit;
+  }
+  return null;
 }
 
 function connectCodex(setEnv) {
@@ -157,7 +205,7 @@ async function main() {
     return /^y(es)?$/i.test((await rl.question(q)).trim());
   };
 
-  const results = [await connectClaude(ask), connectCodex(setEnv), connectGemini(setEnv)];
+  const results = [await connectClaude(ask, setEnv), connectCodex(setEnv), connectGemini(setEnv)];
   rl?.close();
   if (envChanged) writeAtomic(envPath, envText);
 

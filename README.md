@@ -8,7 +8,7 @@ One local page that shows how close you are to every usage limit across your AI 
 
 | Service | How | Shows |
 |---|---|---|
-| Claude Pro/Max | Claude Code status line (official) | 5-hour session %, weekly % |
+| Claude Pro/Max | Claude Code's own `/usage`, run in the background (experimental); falls back to its status line | 5-hour %, weekly %, per-model weekly % |
 | ChatGPT Plus/Pro | Codex CLI's ChatGPT login, same call as Codex `/status` (unofficial) | 5-hour %, weekly % |
 | Gemini AI Pro/Ultra | Runs the Antigravity CLI: `agy -p /usage` (unofficial output) | 5-hour %, weekly %, per model group |
 | Anthropic API | Admin API: cost and usage reports | Month-to-date spend, tokens |
@@ -34,15 +34,14 @@ The server binds to 127.0.0.1 only and rejects foreign Host headers. Keys never 
 
 ## Claude Pro/Max setup
 
-Add this to `~/.claude/settings.json`, using the absolute path to this repo:
+`npm run connect` sets up two sources. Both go through Claude Code itself, so the dashboard never reads or sends your Claude login.
 
-```json
-"statusLine": { "type": "command", "command": "node /abs/path/usage-dashboard/scripts/claude-statusline.mjs" }
-```
+| Source | Freshness | Notes |
+|---|---|---|
+| `claude -p "/usage"` (live) | Every dashboard refresh. Includes Claude desktop app and claude.ai use, since the limits are account-wide. | Claude Code must be installed and signed in to Pro/Max; it doesn't need to be open. Relies on Claude Code's `usage_report`, which Anthropic marks experimental. |
+| Status-line hook (fallback) | Your last interactive Claude Code reply | Official field. Used when the live check fails; the card says why. |
 
-Each Claude Code turn then saves your plan limits to `data/claude-statusline.json`. The script also prints a short status line: model, 5h %, 7d %. This replaces any status line you already have.
-
-The data is only as fresh as your last Claude Code turn. Usage from claude.ai on other devices shows up the next time Claude Code runs.
+Claude's OAuth usage endpoint is not used: Anthropic's terms say third parties may not "collect, store, or intermediate Claude.ai credentials or session tokens".
 
 ## Connect the CLI logins
 
@@ -66,8 +65,6 @@ Both are off by default because they use undocumented interfaces.
 ChatGPT is read-only. The dashboard reads `~/.codex/auth.json` (or `$CODEX_HOME/auth.json`), sends the token only to chatgpt.com, and never refreshes or rewrites it. Codex rotates refresh tokens, so a refresh from here would log the CLI out. When the token expires, the card asks you to run `codex` once.
 
 Gemini runs `agy` itself and never touches its login. Google ended the Gemini CLI's Google-account login for consumer plans on 2026-06-18, and the Gemini CLI's terms forbid other tools reusing that login, so the Gemini CLI is not used.
-
-Claude's OAuth usage endpoint is deliberately not used. Anthropic's terms say third parties may not "collect, store, or intermediate Claude.ai credentials or session tokens", and the status line already gives the same 5-hour and weekly figures.
 
 ## Meter status
 
