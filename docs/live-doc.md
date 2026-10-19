@@ -11,9 +11,9 @@ Build v0.1: a local web app that consolidates usage limits across AI subscriptio
 - Manual meters whose reset time has passed show as "stale" rather than auto-zeroing, because some windows (for example Claude's 5-hour session) start on first use, not on a fixed clock.
 
 - Claude Pro/Max is automatic: a Claude Code status-line script saves `rate_limits.five_hour` and `seven_day` (an official field) for the dashboard. The manual Claude preset stays for people who don't use Claude Code.
-- Not used: the undocumented `api.anthropic.com/api/oauth/usage` endpoint. Anthropic's legal page bars third parties from collecting or intermediating Claude.ai tokens, it rate-limits heavily, and the status line covers the same windows (decided 2026-10-19).
+- Not used: the undocumented `api.anthropic.com/api/oauth/usage` endpoint. Anthropic's legal page bars third parties from collecting or intermediating Claude.ai tokens, it rate-limits heavily, and the status line covers the same windows (decided 2026-10-19). The configured rate-limit endpoints were also skipped, because they report limits but not consumption.
 - Consumer plans are linked through each vendor's own CLI: ChatGPT reads the Codex login read-only (never refreshes, since Codex rotates refresh tokens); Gemini runs `agy` (Gemini CLI login was discontinued for consumer plans 2026-06-18 and its terms forbid reuse). Both are opt-in in `.env`.
-- GLM Coding Plan uses the quota endpoint Z.ai's own plugin calls, with the plan's API key. The configured rate-limit endpoints were also skipped, because they report limits but not consumption.
+- GLM Coding Plan uses the quota endpoint Z.ai's own plugin calls, with the plan's API key.
 
 ## Status (2026-10-19)
 - ~~v0.1 built: 5 API providers, manual meters, and the UI. All 17 tests pass.~~ Superseded.
