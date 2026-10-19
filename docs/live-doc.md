@@ -20,7 +20,7 @@ Build v0.1: a local web app that consolidates usage limits across AI subscriptio
 - API spend has no hard limit the APIs report, so API meters show month-to-date usage. A budget can be set in `.env` to turn it into used/limit.
 
 ## Open questions
-- Which GitHub repo to push to.
+- ~~Which GitHub repo to push to.~~ Resolved: public repo https://github.com/zmdevt/usage_dashboard, MIT license, commits use the GitHub no-reply email.
 - Whether to add alerts (desktop or email) when a meter crosses a threshold.
 
 ## Risks
@@ -29,4 +29,5 @@ Build v0.1: a local web app that consolidates usage limits across AI subscriptio
 ## Next steps
 - ~~Wire the provider modules once endpoint research is verified.~~ Done (superseded).
 - Validate each provider against a real key; the medium-confidence fields are listed in the README.
-- Push to GitHub once the user picks a repo.
+- ~~Push to GitHub once the user picks a repo.~~ Done 2026-10-19 (superseded).
+- Portfolio polish: add a screenshot to the README.
