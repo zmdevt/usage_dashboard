@@ -9,14 +9,11 @@
 <body>
   <main>
     <header class="top">
-      <div>
-        <h1>Usage limits</h1>
-        <p class="muted" id="fetched">Loading…</p>
-      </div>
+      <h1>Usage limits</h1>
+      <p class="summary" id="summary" aria-live="polite"></p>
+      <span class="muted" id="fetched">Loading…</span>
       <button id="refresh" type="button">Refresh</button>
     </header>
-
-    <p class="summary" id="summary" aria-live="polite"></p>
 
     <div id="list"></div>
 
@@ -50,6 +47,7 @@
         <div class="actions wide">
           <button type="submit">Save</button>
           <button type="reset" class="secondary">Clear</button>
+          <button type="button" class="secondary danger" id="delete" hidden>Delete</button>
           <span class="error" id="form-error" role="alert"></span>
         </div>
       </form>
@@ -57,15 +55,11 @@
   </main>
 
   <template id="row-tpl">
-    <div class="row">
-      <div class="desc">
-        <div class="label"></div>
-        <div class="sub muted"></div>
-      </div>
-      <div class="usage">
-        <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><span></span></div>
-        <div class="value"></div>
-      </div>
+    <div class="row" tabindex="0">
+      <div class="label"></div>
+      <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><span></span></div>
+      <div class="pct"></div>
+      <div class="reset"></div>
     </div>
   </template>
 

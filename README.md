@@ -2,7 +2,7 @@
 
 One local page that shows how close you are to every usage limit across your AI subscriptions and APIs.
 
-![Dashboard with sample data: Claude, ChatGPT, Gemini and GLM limits stacked vertically, each row with its description on the left and a usage bar on the right; ChatGPT 5-hour window at 92% flagged red](docs/screenshot.png)
+![Compact dashboard with sample data: Claude, ChatGPT, Gemini, GLM and Perplexity limits in two columns, one line per limit with a usage bar, percent used and reset time; ChatGPT 5-hour at 92% flagged red](docs/screenshot.png)
 
 ## Sources
 
