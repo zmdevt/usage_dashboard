@@ -82,7 +82,14 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const env = loadEnv(join(ROOT, '.env'));
   const port = Number(env.PORT) || 4317;
   // Bind to loopback only: the server holds API keys and has no auth.
-  http.createServer(createApp({ env })).listen(port, '127.0.0.1', () => {
+  const server = http.createServer(createApp({ env }));
+  server.on('error', (e) => {
+    if (e.code !== 'EADDRINUSE') throw e;
+    console.error(`Port ${port} is already in use, probably by another copy of this dashboard.`);
+    console.error(`Stop it (lsof -nP -iTCP:${port} -sTCP:LISTEN, then kill <PID>) or run with PORT=${port + 1}.`);
+    process.exit(1);
+  });
+  server.listen(port, '127.0.0.1', () => {
     console.log(`usage-dashboard on http://127.0.0.1:${port}`);
   });
 }
