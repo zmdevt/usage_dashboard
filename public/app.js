@@ -11,6 +11,7 @@ const PRESETS = [
   { provider: 'Claude', label: 'Weekly limit', unit: '%', limit: 100, period: 'weekly' },
 ];
 
+const AGED_MS = 10 * 60_000;
 const $ = (id) => document.getElementById(id);
 const form = $('manual-form');
 let manualById = new Map();
@@ -114,8 +115,15 @@ function row(m) {
   if (pct == null && m.used != null) parts.push('No limit set');
   if (m.status !== 'stale' && m.resetsAt) parts.push(resetText(m.resetsAt));
   if (m.source === 'manual') parts.push(`entered ${relTime(m.updatedAt)}`);
+  // API meters are normally fetched live; flag ones whose data is older, such
+  // as Claude's, which only updates when Claude Code gets a reply.
+  else if (Date.now() - Date.parse(m.updatedAt) > AGED_MS) {
+    const age = el('span', `updated ${relTime(m.updatedAt)}`);
+    age.className = 'age';
+    parts.push(age);
+  }
   if (m.note) parts.push(m.note);
-  if (parts.length) sub.append(`${word ? ' · ' : ''}${parts.join(' · ')}`);
+  parts.forEach((p, i) => sub.append(i || word ? ' · ' : '', p));
 
   if (m.source === 'manual') {
     const actions = el('span');

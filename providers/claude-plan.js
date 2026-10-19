@@ -35,7 +35,7 @@ export default {
       // resets_at is Unix epoch seconds.
       resetsAt: rl[key].resets_at ? new Date(rl[key].resets_at * 1000).toISOString() : null,
       updatedAt: capturedAt,
-      note: 'From Claude Code status line',
+      note: 'from your last Claude Code reply',
     }));
   },
 };
