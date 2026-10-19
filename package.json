@@ -1,0 +1,15 @@
+{
+  "name": "usage-dashboard",
+  "version": "0.1.0",
+  "description": "Local dashboard that consolidates usage limits across AI subscriptions and APIs",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test/*.test.js"
+  }
+}

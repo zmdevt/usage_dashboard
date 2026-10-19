@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Usage Limits</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div>
+      <h1>Usage Limits</h1>
+      <p class="muted" id="fetched">Loading…</p>
+    </div>
+    <button id="refresh" type="button">Refresh</button>
+  </header>
+
+  <main>
+    <section class="summary" id="summary" aria-live="polite"></section>
+
+    <section>
+      <h2>Needs attention</h2>
+      <div class="grid" id="attention"></div>
+    </section>
+
+    <section>
+      <h2>All meters</h2>
+      <div id="groups"></div>
+    </section>
+
+    <section>
+      <h2>Not connected</h2>
+      <ul class="plain" id="unconfigured"></ul>
+    </section>
+
+    <section>
+      <h2 id="form-title">Add manual meter</h2>
+      <p class="muted">For plans with no usage API. Copy the numbers from the provider's usage page.</p>
+      <div class="presets" id="presets"></div>
+      <form id="manual-form" class="form">
+        <input type="hidden" name="id">
+        <label>Provider <input name="provider" required maxlength="60"></label>
+        <label>Label <input name="label" required maxlength="80"></label>
+        <label>Used <input name="used" type="number" min="0" step="any"></label>
+        <label>Limit <input name="limit" type="number" min="0" step="any"></label>
+        <label>Unit <input name="unit" maxlength="30" placeholder="messages, %, $"></label>
+        <label>Period
+          <select name="period">
+            <option value="none">none</option>
+            <option value="5h">5-hour window</option>
+            <option value="daily">daily</option>
+            <option value="weekly">weekly</option>
+            <option value="monthly">monthly</option>
+          </select>
+        </label>
+        <label>Resets at <input name="resetsAt" type="datetime-local"></label>
+        <label class="wide">Note <input name="note" maxlength="200"></label>
+        <div class="actions wide">
+          <button type="submit">Save</button>
+          <button type="reset" class="secondary" id="cancel">Clear</button>
+          <span class="error" id="form-error" role="alert"></span>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <template id="meter-tpl">
+    <article class="meter">
+      <div class="meter-head">
+        <span class="label"></span>
+        <span class="badge"></span>
+      </div>
+      <div class="figures"></div>
+      <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><span></span></div>
+      <div class="meta muted"></div>
+      <div class="row-actions"></div>
+    </article>
+  </template>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
