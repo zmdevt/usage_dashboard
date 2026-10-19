@@ -22,6 +22,9 @@ export default {
 
   async fetch(env) {
     const { capturedAt, rate_limits: rl = {} } = JSON.parse(await readFile(fileFor(env), 'utf8'));
+    if (!WINDOWS.some(([key]) => rl[key])) {
+      throw new Error('Claude Code ran the status line but sent no plan limits. Send a message in Claude Code; if this stays, check /status shows a Pro or Max login, not an API key.');
+    }
     return WINDOWS.filter(([key]) => rl[key]).map(([key, id, label, period]) => ({
       id,
       label,

@@ -104,11 +104,18 @@ test('status-line script captures rate limits and claude-plan reads them', async
     assert.equal(meters[1].used, 91);
     assert.equal(meters[0].resetsAt, new Date(resets * 1000).toISOString());
 
-    // No rate_limits (API-key users): file left untouched, line still printed.
-    await writeFile(file, '{"capturedAt":"x","rate_limits":{}}');
+    // No rate_limits: last good limits kept, lastRunAt recorded, line still printed.
+    const before = JSON.parse(await readFile(file, 'utf8'));
     const out2 = spawnSync(process.execPath, [script], { input: '{}', env: { ...process.env, CLAUDE_STATUSLINE_FILE: file }, encoding: 'utf8' });
     assert.equal(out2.stdout, 'Claude');
-    assert.equal(await readFile(file, 'utf8'), '{"capturedAt":"x","rate_limits":{}}');
+    const after = JSON.parse(await readFile(file, 'utf8'));
+    assert.deepEqual(after.rate_limits, before.rate_limits);
+    assert.equal(after.capturedAt, before.capturedAt);
+    assert.ok(after.lastRunAt);
+
+    // A file with no limits at all explains itself instead of showing nothing.
+    await writeFile(file, '{"lastRunAt":"x"}');
+    await assert.rejects(claudePlan.fetch(env), /sent no plan limits/);
   } finally {
     await rm(dir, { recursive: true });
   }

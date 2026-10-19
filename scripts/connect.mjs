@@ -7,7 +7,7 @@
 //
 // Usage: npm run connect [-- --yes]
 
-import { readFileSync, writeFileSync, renameSync, existsSync, copyFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync, existsSync, copyFileSync, mkdirSync, rmSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -28,16 +28,19 @@ export function setEnvLine(text, key, value) {
   return `${text}${text && !text.endsWith('\n') ? '\n' : ''}${line}\n`;
 }
 
-export function statusLineCommand(script = STATUSLINE_SCRIPT) {
-  return `node "${script}"`;
+// Uses node's absolute path: Claude Code runs the hook in a non-interactive
+// shell where version-manager PATH setup (nvm, conda, etc.) may be missing.
+export function statusLineCommand(script = STATUSLINE_SCRIPT, node = process.execPath) {
+  return `"${node}" "${script}"`;
 }
 
 // Returns what adding our status line to Claude settings would do.
 export function planStatusLine(settings, command) {
   const current = settings.statusLine;
   if (current?.command === command) return { action: 'none' };
+  const ours = String(current?.command || '').includes('claude-statusline.mjs');
   return {
-    action: current ? 'replace' : 'add',
+    action: !current ? 'add' : ours ? 'update' : 'replace',
     previous: current?.command,
     next: { ...settings, statusLine: { type: 'command', command } },
   };
@@ -80,20 +83,32 @@ async function connectClaude(ask) {
       return ['Claude', 'action needed', `${path} is not valid JSON; left untouched`];
     }
   }
-  const plan = planStatusLine(settings, statusLineCommand());
-  if (plan.action === 'none') return ['Claude', 'connected', 'status line already set'];
-
-  console.log(`\nClaude Code: add the usage status line to ${path}`);
-  if (plan.previous) console.log(`  This replaces your current status line: ${plan.previous}`);
-  if (!(await ask('  Proceed? [y/N] '))) return ['Claude', 'skipped', 'you declined the settings change'];
-
-  if (existsSync(path)) {
-    const backup = `${path}.bak-${Date.now()}`;
-    copyFileSync(path, backup);
-    console.log(`  Backup saved: ${backup}`);
+  const command = statusLineCommand();
+  const plan = planStatusLine(settings, command);
+  if (plan.action !== 'none') {
+    if (plan.action === 'update') {
+      console.log(`\nClaude Code: updating the usage status line in ${path} to call node by its full path`);
+    } else {
+      console.log(`\nClaude Code: add the usage status line to ${path}`);
+      if (plan.previous) console.log(`  This replaces your current status line: ${plan.previous}`);
+      if (!(await ask('  Proceed? [y/N] '))) return ['Claude', 'skipped', 'you declined the settings change'];
+    }
+    if (existsSync(path)) {
+      const backup = `${path}.bak-${Date.now()}`;
+      copyFileSync(path, backup);
+      console.log(`  Backup saved: ${backup}`);
+    }
+    writeAtomic(path, `${JSON.stringify(plan.next, null, 2)}\n`);
   }
-  writeAtomic(path, `${JSON.stringify(plan.next, null, 2)}\n`);
-  return ['Claude', 'connected', 'send one message in Claude Code to load your limits (Pro/Max login needed)'];
+
+  // Run the hook once the way Claude Code would (via a shell), writing to a
+  // scratch file so the real data file only ever holds Claude Code's output.
+  const probe = join(dirname(STATUSLINE_SCRIPT), `.probe-${process.pid}.json`);
+  const r = spawnSync(command, { shell: true, input: '{}', encoding: 'utf8', timeout: 10_000, env: { ...process.env, CLAUDE_STATUSLINE_FILE: probe } });
+  const ran = existsSync(probe);
+  if (ran) rmSync(probe);
+  if (!ran) return ['Claude', 'action needed', `the status-line hook failed to run: ${(r.stderr || r.error?.message || 'no output').trim().slice(0, 200)}`];
+  return ['Claude', 'connected', 'hook works. Start a new Claude Code session and send one message (Pro/Max login needed)'];
 }
 
 function connectCodex(setEnv) {

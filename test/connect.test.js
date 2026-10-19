@@ -23,6 +23,8 @@ test('planStatusLine adds, replaces, or leaves settings alone', () => {
   assert.deepEqual(add.next, { theme: 'dark', statusLine: { type: 'command', command: cmd } });
   const rep = planStatusLine({ statusLine: { type: 'command', command: 'other' } }, cmd);
   assert.deepEqual([rep.action, rep.previous], ['replace', 'other']);
+  const upd = planStatusLine({ statusLine: { type: 'command', command: 'node "/x/claude-statusline.mjs"' } }, '"/usr/bin/node" "/x/claude-statusline.mjs"');
+  assert.equal(upd.action, 'update');
 });
 
 test('checkCodexLogin distinguishes ChatGPT login, API-key login and no login', async () => {
@@ -71,7 +73,9 @@ test('connect wires up all three CLIs end to end without printing tokens', async
 
     const settings = JSON.parse(await readFile(join(home, '.claude', 'settings.json'), 'utf8'));
     assert.equal(settings.theme, 'dark');
+    assert.ok(settings.statusLine.command.startsWith(`"${process.execPath}" "`));
     assert.match(settings.statusLine.command, /claude-statusline\.mjs"$/);
+    assert.match(r.stdout, /Claude\s+connected\s+hook works/);
     assert.ok((await readdir(join(home, '.claude'))).some((f) => f.startsWith('settings.json.bak-')));
     assert.equal(await readFile(envPath, 'utf8'), 'PORT=4317\nCHATGPT_USAGE=on\nGEMINI_AGY=on\n');
   } finally {

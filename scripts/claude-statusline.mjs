@@ -7,7 +7,7 @@
 // ~/.claude/settings.json:
 //   "statusLine": { "type": "command", "command": "node /abs/path/usage-dashboard/scripts/claude-statusline.mjs" }
 
-import { writeFileSync, renameSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -23,15 +23,23 @@ process.stdin.on('end', () => {
     data = JSON.parse(input);
   } catch {}
 
+  // Every run records lastRunAt, so the dashboard can tell "hook never ran"
+  // apart from "ran but Claude Code sent no plan limits". The last good
+  // limits are kept when a run carries none (e.g. before the first reply).
   const rl = data.rate_limits;
-  if (rl && (rl.five_hour || rl.seven_day)) {
+  const fresh = rl && (rl.five_hour || rl.seven_day);
+  try {
+    let saved = {};
     try {
-      mkdirSync(dirname(target), { recursive: true });
-      const tmp = `${target}.${process.pid}.tmp`;
-      writeFileSync(tmp, JSON.stringify({ capturedAt: new Date().toISOString(), rate_limits: rl }));
-      renameSync(tmp, target);
+      saved = JSON.parse(readFileSync(target, 'utf8'));
     } catch {}
-  }
+    const now = new Date().toISOString();
+    const next = fresh ? { ...saved, capturedAt: now, rate_limits: rl, lastRunAt: now } : { ...saved, lastRunAt: now };
+    mkdirSync(dirname(target), { recursive: true });
+    const tmp = `${target}.${process.pid}.tmp`;
+    writeFileSync(tmp, JSON.stringify(next));
+    renameSync(tmp, target);
+  } catch {}
 
   const parts = [data.model?.display_name || 'Claude'];
   if (rl?.five_hour) parts.push(`5h ${Math.round(rl.five_hour.used_percentage)}%`);
