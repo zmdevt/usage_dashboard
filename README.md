@@ -13,6 +13,7 @@ One local page that shows how close you are to every usage limit across your AI 
 | OpenAI API | Admin API: organization costs | Month-to-date spend |
 | GitHub Copilot | Billing usage API, AI credits | Credits used vs plan allotment |
 | Cursor (team) | Admin API `/teams/spend` | Cycle spend, included-usage % |
+| GLM Coding Plan | Z.ai quota endpoint (undocumented; used by Z.ai's own plugin) | 5-hour %, weekly %, monthly MCP tool calls |
 | ChatGPT, Gemini, Perplexity, Cursor individual | Manual entry | Whatever you copy from their usage page |
 
 Consumer chat plans have no official usage API. Manual meters cover them; nothing is scraped.
@@ -61,6 +62,7 @@ These provider endpoints were checked against official docs on 2026-10-19. Some 
 | GitHub | The `ai_credit/usage` response fields. Credits are computed as gross USD / $0.01. |
 | GitHub | Plan allotments: Pro 1,500, Pro+ 7,000, Max 20,000. GitHub says the flex part may change. |
 | Cursor | Cursor's docs lag its live schema. |
+| GLM | No API reference exists. Window codes (`unit`/`number`) are inferred from Z.ai's plugin and two other clients; unknown windows are skipped. |
 
 Each provider reads fields defensively. A provider that fails shows as one error card and does not affect the others.
 

@@ -5,5 +5,6 @@ import anthropicApi from './anthropic-api.js';
 import openaiApi from './openai-api.js';
 import githubCopilot from './github-copilot.js';
 import cursorTeam from './cursor-team.js';
+import glmCoding from './glm-coding.js';
 
-export const providers = [claudePlan, anthropicApi, openaiApi, githubCopilot, cursorTeam];
+export const providers = [claudePlan, anthropicApi, openaiApi, githubCopilot, cursorTeam, glmCoding];
