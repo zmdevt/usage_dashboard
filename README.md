@@ -44,6 +44,16 @@ Each Claude Code turn then saves your plan limits to `data/claude-statusline.jso
 
 The data is only as fresh as your last Claude Code turn. Usage from claude.ai on other devices shows up the next time Claude Code runs.
 
+## Connect the CLI logins
+
+Sign in to each CLI you use (`claude`, `codex` with "Sign in with ChatGPT", `agy`), then run:
+
+```sh
+npm run connect
+```
+
+It checks each login and turns on the matching provider in `.env`. For Claude Code it adds the status-line hook to `~/.claude/settings.json`, but only after asking, and it saves a backup first. It never prints, copies or refreshes a token. Restart the dashboard afterwards.
+
 ## ChatGPT and Gemini setup
 
 Both are off by default because they use undocumented interfaces.

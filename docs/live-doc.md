@@ -17,6 +17,7 @@ Build v0.1: a local web app that consolidates usage limits across AI subscriptio
 
 ## Status (2026-10-19)
 - ~~v0.1 built: 5 API providers, manual meters, and the UI. All 17 tests pass.~~ Superseded.
+- v0.3: vertical layout (connected providers only), `npm run connect` for CLI logins. 34 tests pass.
 - v0.2: 8 providers (adds GLM, ChatGPT via Codex, Gemini via agy). All 29 tests pass. Not yet run against real credentials.
 - Earlier note: Screenshots checked in light mode, and in dark mode at 390px width.
 
@@ -36,4 +37,4 @@ Build v0.1: a local web app that consolidates usage limits across AI subscriptio
 - ~~Push to GitHub once the user picks a repo.~~ Done 2026-10-19 (superseded).
 - ~~Portfolio polish: add a screenshot to the README.~~ Done 2026-10-19 (superseded).
 - Run locally with one real API key to confirm the medium-confidence provider fields.
-- Run with real Codex and agy logins to confirm the ChatGPT and Gemini parsers.
+- Run with real Codex and agy logins to confirm the ChatGPT and Gemini parsers. `npm run connect` (added 2026-10-19) checks the logins and wires the providers; its agy output is the first real sample to check the parser against.
