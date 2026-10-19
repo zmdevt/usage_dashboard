@@ -6,5 +6,7 @@ import openaiApi from './openai-api.js';
 import githubCopilot from './github-copilot.js';
 import cursorTeam from './cursor-team.js';
 import glmCoding from './glm-coding.js';
+import chatgptCodex from './chatgpt-codex.js';
+import geminiAgy from './gemini-agy.js';
 
-export const providers = [claudePlan, anthropicApi, openaiApi, githubCopilot, cursorTeam, glmCoding];
+export const providers = [claudePlan, chatgptCodex, geminiAgy, anthropicApi, openaiApi, githubCopilot, cursorTeam, glmCoding];

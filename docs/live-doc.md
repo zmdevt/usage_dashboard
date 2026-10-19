@@ -11,10 +11,14 @@ Build v0.1: a local web app that consolidates usage limits across AI subscriptio
 - Manual meters whose reset time has passed show as "stale" rather than auto-zeroing, because some windows (for example Claude's 5-hour session) start on first use, not on a fixed clock.
 
 - Claude Pro/Max is automatic: a Claude Code status-line script saves `rate_limits.five_hour` and `seven_day` (an official field) for the dashboard. The manual Claude preset stays for people who don't use Claude Code.
-- Not used: the undocumented `api.anthropic.com/api/oauth/usage` endpoint (unofficial, unstable shape). The configured rate-limit endpoints were also skipped, because they report limits but not consumption.
+- Not used: the undocumented `api.anthropic.com/api/oauth/usage` endpoint. Anthropic's legal page bars third parties from collecting or intermediating Claude.ai tokens, it rate-limits heavily, and the status line covers the same windows (decided 2026-10-19).
+- Consumer plans are linked through each vendor's own CLI: ChatGPT reads the Codex login read-only (never refreshes, since Codex rotates refresh tokens); Gemini runs `agy` (Gemini CLI login was discontinued for consumer plans 2026-06-18 and its terms forbid reuse). Both are opt-in in `.env`.
+- GLM Coding Plan uses the quota endpoint Z.ai's own plugin calls, with the plan's API key. The configured rate-limit endpoints were also skipped, because they report limits but not consumption.
 
 ## Status (2026-10-19)
-- v0.1 built: 5 API providers, manual meters, and the UI. All 17 tests pass. Screenshots checked in light mode, and in dark mode at 390px width.
+- ~~v0.1 built: 5 API providers, manual meters, and the UI. All 17 tests pass.~~ Superseded.
+- v0.2: 8 providers (adds GLM, ChatGPT via Codex, Gemini via agy). All 29 tests pass. Not yet run against real credentials.
+- Earlier note: Screenshots checked in light mode, and in dark mode at 390px width.
 
 ## Working assumptions
 - API spend has no hard limit the APIs report, so API meters show month-to-date usage. A budget can be set in `.env` to turn it into used/limit.
@@ -32,3 +36,4 @@ Build v0.1: a local web app that consolidates usage limits across AI subscriptio
 - ~~Push to GitHub once the user picks a repo.~~ Done 2026-10-19 (superseded).
 - ~~Portfolio polish: add a screenshot to the README.~~ Done 2026-10-19 (superseded).
 - Run locally with one real API key to confirm the medium-confidence provider fields.
+- Run with real Codex and agy logins to confirm the ChatGPT and Gemini parsers.

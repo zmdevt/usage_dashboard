@@ -9,14 +9,16 @@ One local page that shows how close you are to every usage limit across your AI 
 | Service | How | Shows |
 |---|---|---|
 | Claude Pro/Max | Claude Code status line (official) | 5-hour session %, weekly % |
+| ChatGPT Plus/Pro | Codex CLI's ChatGPT login, same call as Codex `/status` (unofficial) | 5-hour %, weekly % |
+| Gemini AI Pro/Ultra | Runs the Antigravity CLI: `agy -p /usage` (unofficial output) | 5-hour %, weekly %, per model group |
 | Anthropic API | Admin API: cost and usage reports | Month-to-date spend, tokens |
 | OpenAI API | Admin API: organization costs | Month-to-date spend |
 | GitHub Copilot | Billing usage API, AI credits | Credits used vs plan allotment |
 | Cursor (team) | Admin API `/teams/spend` | Cycle spend, included-usage % |
 | GLM Coding Plan | Z.ai quota endpoint (undocumented; used by Z.ai's own plugin) | 5-hour %, weekly %, monthly MCP tool calls |
-| ChatGPT, Gemini, Perplexity, Cursor individual | Manual entry | Whatever you copy from their usage page |
+| Perplexity, Cursor individual, any plan above without its CLI | Manual entry | Whatever you copy from their usage page |
 
-Consumer chat plans have no official usage API. Manual meters cover them; nothing is scraped.
+Consumer chat plans have no official usage API, so the automatic routes go through each vendor's own CLI login. Without the CLI, use a manual meter. Nothing is scraped.
 
 ## Run
 
@@ -42,6 +44,21 @@ Each Claude Code turn then saves your plan limits to `data/claude-statusline.jso
 
 The data is only as fresh as your last Claude Code turn. Usage from claude.ai on other devices shows up the next time Claude Code runs.
 
+## ChatGPT and Gemini setup
+
+Both are off by default because they use undocumented interfaces.
+
+| | Needs | Turn on |
+|---|---|---|
+| ChatGPT | Codex CLI signed in with your ChatGPT account (not an API key; file storage, not keychain) | `CHATGPT_USAGE=on` |
+| Gemini | Antigravity CLI (`agy`) installed and signed in | `GEMINI_AGY=on` |
+
+ChatGPT is read-only. The dashboard reads `~/.codex/auth.json` (or `$CODEX_HOME/auth.json`), sends the token only to chatgpt.com, and never refreshes or rewrites it. Codex rotates refresh tokens, so a refresh from here would log the CLI out. When the token expires, the card asks you to run `codex` once.
+
+Gemini runs `agy` itself and never touches its login. Google ended the Gemini CLI's Google-account login for consumer plans on 2026-06-18, and the Gemini CLI's terms forbid other tools reusing that login, so the Gemini CLI is not used.
+
+Claude's OAuth usage endpoint is deliberately not used. Anthropic's terms say third parties may not "collect, store, or intermediate Claude.ai credentials or session tokens", and the status line already gives the same 5-hour and weekly figures.
+
 ## Meter status
 
 | Status | Rule |
@@ -62,6 +79,8 @@ These provider endpoints were checked against official docs on 2026-10-19. Some 
 | GitHub | The `ai_credit/usage` response fields. Credits are computed as gross USD / $0.01. |
 | GitHub | Plan allotments: Pro 1,500, Pro+ 7,000, Max 20,000. GitHub says the flex part may change. |
 | Cursor | Cursor's docs lag its live schema. |
+| ChatGPT | Endpoint and fields read from openai/codex source; OpenAI publishes no policy on reading it from other tools. |
+| Gemini | `agy` output format comes from one open-source client (CodexBar); not verified against `agy` itself. |
 | GLM | No API reference exists. Window codes (`unit`/`number`) are inferred from Z.ai's plugin and two other clients; unknown windows are skipped. |
 
 Each provider reads fields defensively. A provider that fails shows as one error card and does not affect the others.
