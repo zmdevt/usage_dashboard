@@ -2,6 +2,8 @@
 
 One local page that shows how close you are to every usage limit across your AI subscriptions and APIs.
 
+![Dashboard with sample data: a Claude weekly limit at 93% flagged critical, a stale Gemini meter greyed out, and setup hints for unconnected providers](docs/screenshot.png)
+
 ## Sources
 
 | Service | How | Shows |

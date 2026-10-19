@@ -30,4 +30,5 @@ Build v0.1: a local web app that consolidates usage limits across AI subscriptio
 - ~~Wire the provider modules once endpoint research is verified.~~ Done (superseded).
 - Validate each provider against a real key; the medium-confidence fields are listed in the README.
 - ~~Push to GitHub once the user picks a repo.~~ Done 2026-10-19 (superseded).
-- Portfolio polish: add a screenshot to the README.
+- ~~Portfolio polish: add a screenshot to the README.~~ Done 2026-10-19 (superseded).
+- Run locally with one real API key to confirm the medium-confidence provider fields.
